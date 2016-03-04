@@ -25,6 +25,7 @@
 
 typedef struct {
 	char *name;
+	char *serverName;
 	int conectionNbr;
 } user;
 
@@ -40,7 +41,7 @@ void display_userBank(user *bank, int size);
 void display_userBank(user *bank, int size) {
 	if(bank != NULL) {
 		for(int i=0; i<size; i++) {
-			printf("%s:%d\n", bank[i].name,bank[i].conectionNbr);
+			printf("%s:%s:%d\n", bank[i].name,bank[i].serverName,bank[i].conectionNbr);
 		}
 	}
 }
@@ -49,7 +50,7 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 	int found = 0;
 	int i = 0;
 	while (i < *usersSize && found == 0 && users != NULL) {
-		if(strcmp(userTested.name, users[i].name) == 0) {
+		if((strcmp(userTested.name, users[i].name) == 0) && (strcmp(userTested.serverName, users[i].serverName) == 0)) {
 			found = 1;
 			users[i].conectionNbr++;
 		}
@@ -61,6 +62,7 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 		if(users != NULL) {
 			users[*usersSize].name = userTested.name;
 			users[*usersSize].conectionNbr = 1;
+			users[*usersSize].serverName = userTested.serverName;
 			(*usersSize)++;
 			return users;
 		} else {
@@ -105,6 +107,10 @@ int parse_line(char *line, user *newUser) {
     	newUser->name = malloc(sizeof(char) * strlen(token));
     	strcpy(newUser->name, token);
         break;
+      case 2:
+    	newUser->serverName = malloc(sizeof(char) * strlen(token));
+    	strcpy(newUser->serverName, token);
+    	break;
       default:
         break;
     }
