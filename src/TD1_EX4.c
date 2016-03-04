@@ -56,6 +56,7 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 		i++;
 	}
 	if(found == 0) {
+
 		users = realloc(users, ((*usersSize) + 1)*sizeof(user));
 		if(users != NULL) {
 			users[*usersSize].name = userTested.name;
@@ -94,12 +95,15 @@ int check_line(char *line){
 
 int parse_line(char *line, user *newUser) {
   int i = 0;
-  char *token = strtok(line, ";");
+  char *tempLine = malloc(sizeof(char) * strlen(line));
+  strcpy(tempLine, line);
+  char *token = strtok(tempLine, ";");
   newUser->conectionNbr = 1;
   while (token) {
     switch (i) {
       case 1:
-        newUser->name = token;
+    	newUser->name = malloc(sizeof(char) * strlen(token));
+    	strcpy(newUser->name, token);
         break;
       default:
         break;
@@ -109,6 +113,8 @@ int parse_line(char *line, user *newUser) {
       i++;
     }
   }
+  free(tempLine);
+  tempLine = NULL;
   return 0;
 }
 
@@ -121,22 +127,21 @@ int readFiles(int fd) {
 	user us= {"default",0};
 	int nbUser = 0;
 	user *userBank = NULL;
-	//use getchar and check end of line !
 	if (dup2(fd, STDIN_FILENO) < 0) {
 		return -1;
 	}
 	while (((c = getchar()) != EOF) && !feof(stdin) && !ferror(stdin)) {
 		if(c == '\n') {
 			buf[i] = '\0';
-			//printf("%s", buf);
 			if(check_line(buf)) {
 				parse_line(buf,&us);
+				//Le problême vient de parse_line qui quand il copie le nom de la personne copie l'adresse du buffer dans la structure
+				//Du coup lorsque l'on lit la ligne suivante on ecrit par dessus dans le buffer !
 				userBank = add_to_LOG(us, userBank, &nbUser);
-				//printf("Name : %s, connection : %d\n", us.name, us.conectionNbr);
 			}
 			i = 0;
 		}
-		if(i < BUFSIZ-1) {
+		if(i < BUFFER_SIZE-1) {
 			buf[i++] = c;
 		}
 	}
