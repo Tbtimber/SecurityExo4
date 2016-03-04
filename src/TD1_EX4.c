@@ -27,6 +27,7 @@ typedef struct {
 	char *name;
 	char *serverName;
 	int conectionNbr;
+	int timespend;
 } user;
 
 //Mail du prof : anthony.dechy@advens.fr
@@ -41,7 +42,7 @@ void display_userBank(user *bank, int size);
 void display_userBank(user *bank, int size) {
 	if(bank != NULL) {
 		for(int i=0; i<size; i++) {
-			printf("%s:%s:%d\n", bank[i].name,bank[i].serverName,bank[i].conectionNbr);
+			printf("%s:%s:%d:%d\n", bank[i].name,bank[i].serverName,bank[i].conectionNbr, bank[i].timespend);
 		}
 	}
 }
@@ -53,6 +54,7 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 		if((strcmp(userTested.name, users[i].name) == 0) && (strcmp(userTested.serverName, users[i].serverName) == 0)) {
 			found = 1;
 			users[i].conectionNbr++;
+			users[i].timespend += userTested.timespend;
 		}
 		i++;
 	}
@@ -63,6 +65,7 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 			users[*usersSize].name = userTested.name;
 			users[*usersSize].conectionNbr = 1;
 			users[*usersSize].serverName = userTested.serverName;
+			users[*usersSize].timespend = userTested.timespend;
 			(*usersSize)++;
 			return users;
 		} else {
@@ -110,6 +113,9 @@ int parse_line(char *line, user *newUser) {
       case 2:
     	newUser->serverName = malloc(sizeof(char) * strlen(token));
     	strcpy(newUser->serverName, token);
+    	break;
+      case 3:
+    	newUser->timespend = strtol(token,NULL,10);
     	break;
       default:
         break;
