@@ -19,7 +19,7 @@
 
 
 #define FILE_NAME "login.log"
-#define LINE_REGEX "[0-9]{2}-[0-9]{2}-[0-9]{4} [0-9]{2}:[0-9]{2};[a-zA-Z]+;[a-zA-Z0-9]+;[0-9]+"
+#define LINE_REGEX ".*[[:space:]].*;.*;.*;.*"
 #define BUFFER_SIZE 128
 
 
@@ -38,7 +38,7 @@ int check_line(char *line);
 int parse_line(char *line, user *newUser);
 user  *add_to_LOG(user userTested, user *users, int *usersSize);
 void display_userBank(user *bank, int size);
-void delete_user_bank(user *users, int usersSize)
+void delete_user_bank(user *users, int usersSize);
 
 void display_userBank(user *bank, int size) {
 	if(bank != NULL) {
@@ -103,6 +103,7 @@ int check_line(char *line){
      return 1;
    }
    regfree(&regex);
+   printf("test\n");
    return 0;
 }
 
@@ -168,10 +169,10 @@ int readFiles(int fd) {
 	}
 
 	display_userBank(userBank, nbUser);
-        delete_user_bank(userBank, nbUser);
-        free(userBank);
-        userBank = NULL;
-	return -1;
+    delete_user_bank(userBank, nbUser);
+    free(userBank);
+    userBank = NULL;
+	return 1;
 }
 
 int check_file() {
