@@ -38,6 +38,7 @@ int check_line(char *line);
 int parse_line(char *line, user *newUser);
 user  *add_to_LOG(user userTested, user *users, int *usersSize);
 void display_userBank(user *bank, int size);
+void delete_user_bank(user *users, int usersSize)
 
 void display_userBank(user *bank, int size) {
 	if(bank != NULL) {
@@ -51,7 +52,7 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 	int found = 0;
 	int i = 0;
 	while (i < *usersSize && found == 0 && users != NULL) {
-		if((strcmp(userTested.name, users[i].name) == 0) && (strcmp(userTested.serverName, users[i].serverName) == 0)) {
+		if((strncmp(userTested.name, users[i].name, strlen(users[i].name)) == 0) && (strncmp(userTested.serverName, users[i].serverName, strlen(users[i].serverName)) == 0)) {
 			found = 1;
 			users[i].conectionNbr++;
 			users[i].timespend += userTested.timespend;
@@ -75,6 +76,16 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 	}
 	return users;
 }
+
+void delete_user_bank(user *users, int usersSize){
+    for(int i = 0; i < usersSize; i++){
+        free(users[i].name);
+        users[i].name = NULL;
+        free(users[i].serverName);
+        users[i].serverName = NULL;
+    }
+}
+
 int check_line(char *line){
   regex_t regex;
   int reti;
@@ -84,35 +95,34 @@ int check_line(char *line){
   if(reti){
     fprintf(stderr, "Regex not valid\n");
     regfree(&regex);
-    printf("return 0\n");
     return 0;
   }
 
   reti = regexec(&regex, line, 0, NULL, 0);
    if (reti == 0){
-	   printf("return 1\n");
      return 1;
    }
    regfree(&regex);
-  // printf("Not Match\n");
-   return 1;
+   return 0;
 }
 
 int parse_line(char *line, user *newUser) {
   int i = 0;
-  char *tempLine = malloc(sizeof(char) * strlen(line));
-  strcpy(tempLine, line);
+  char *tempLine = calloc(strlen(line), sizeof(char));
+  strncpy(tempLine, line, strlen(line));
   char *token = strtok(tempLine, ";");
   newUser->conectionNbr = 1;
   while (token) {
     switch (i) {
       case 1:
-    	newUser->name = malloc(sizeof(char) * strlen(token));
-    	strcpy(newUser->name, token);
+    	newUser->name = calloc(strlen(token) + 1, sizeof(char));
+    	strncpy(newUser->name, token, strlen(token));
+        newUser->name[strlen(token)] = '\0';
         break;
       case 2:
-    	newUser->serverName = malloc(sizeof(char) * strlen(token));
-    	strcpy(newUser->serverName, token);
+    	newUser->serverName = calloc(strlen(token) + 1, sizeof(char));
+    	strncpy(newUser->serverName, token, strlen(token));
+        newUser->serverName[strlen(token)] = '\0';
     	break;
       case 3:
     	newUser->timespend = strtol(token,NULL,10);
@@ -127,9 +137,10 @@ int parse_line(char *line, user *newUser) {
   }
   free(tempLine);
   tempLine = NULL;
+  free(token);
+  token =  NULL;
   return 0;
 }
-
 
 
 int readFiles(int fd) {
@@ -147,8 +158,6 @@ int readFiles(int fd) {
 			buf[i] = '\0';
 			if(check_line(buf)) {
 				parse_line(buf,&us);
-				//Le problême vient de parse_line qui quand il copie le nom de la personne copie l'adresse du buffer dans la structure
-				//Du coup lorsque l'on lit la ligne suivante on ecrit par dessus dans le buffer !
 				userBank = add_to_LOG(us, userBank, &nbUser);
 			}
 			i = 0;
@@ -159,6 +168,9 @@ int readFiles(int fd) {
 	}
 
 	display_userBank(userBank, nbUser);
+        delete_user_bank(userBank, nbUser);
+        free(userBank);
+        userBank = NULL;
 	return -1;
 }
 
