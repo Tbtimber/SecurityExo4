@@ -19,7 +19,7 @@
 
 
 #define FILE_NAME "login.log"
-#define LINE_REGEX ".*[[:space:]].*;.*;.*;.*"
+#define LINE_REGEX ".*[[:space:]].*;.*;.*;[[:digit:]]"
 #define BUFFER_SIZE 128
 
 
@@ -38,12 +38,13 @@ int check_line(char *line);
 int parse_line(char *line, user *newUser);
 user  *add_to_LOG(user userTested, user *users, int *usersSize);
 void display_userBank(user *bank, int size);
+int copy_users(user *oldUsers, user *newUsers, int newSize);
 void delete_user_bank(user *users, int usersSize);
 
 void display_userBank(user *bank, int size) {
 	if(bank != NULL) {
 		for(int i=0; i<size; i++) {
-			printf("%s:%s:%d:%d\n", bank[i].name,bank[i].serverName,bank[i].conectionNbr, bank[i].timespend);
+			fprintf(stdout, "%s:%s:%d:%d\n", bank[i].name,bank[i].serverName,bank[i].conectionNbr, bank[i].timespend);
 		}
 	}
 }
@@ -51,8 +52,13 @@ void display_userBank(user *bank, int size) {
 user *add_to_LOG(user userTested, user *users, int *usersSize) {
 	int found = 0;
 	int i = 0;
+        size_t sizeName = 0;
+        size_t sizeServerName = 0;
+        user *tmpUsers = NULL;
 	while (i < *usersSize && found == 0 && users != NULL) {
-		if((strncmp(userTested.name, users[i].name, strlen(users[i].name)) == 0) && (strncmp(userTested.serverName, users[i].serverName, strlen(users[i].serverName)) == 0)) {
+            sizeName = strlen(users[i].name);
+            sizeServerName = strlen(users[i].serverName);
+		if((strncmp(userTested.name, users[i].name, sizeName) == 0) && (strncmp(userTested.serverName, users[i].serverName, sizeServerName) == 0)) {
 			found = 1;
 			users[i].conectionNbr++;
 			users[i].timespend += userTested.timespend;
@@ -60,21 +66,41 @@ user *add_to_LOG(user userTested, user *users, int *usersSize) {
 		i++;
 	}
 	if(found == 0) {
-
-		users = realloc(users, ((*usersSize) + 1)*sizeof(user));
-		if(users != NULL) {
-			users[*usersSize].name = userTested.name;
-			users[*usersSize].conectionNbr = 1;
-			users[*usersSize].serverName = userTested.serverName;
-			users[*usersSize].timespend = userTested.timespend;
-			(*usersSize)++;
-			return users;
-		} else {
-			*usersSize = 0;
-			return NULL;
-		}
+            tmpUsers = malloc(((*usersSize) + 1)*sizeof(user));
+            if(tmpUsers != NULL) {
+                if((*usersSize) > 0){
+                    copy_users(users, tmpUsers, (*usersSize));
+                    free(users);
+                }
+                users = tmpUsers;
+                users[*usersSize].name = userTested.name;
+                users[*usersSize].conectionNbr = 1;
+                users[*usersSize].serverName = userTested.serverName;
+                users[*usersSize].timespend = userTested.timespend;
+                (*usersSize)++;
+                return users;
+            } else {
+                    *usersSize = 0;
+                    return NULL;
+            }
 	}
 	return users;
+}
+
+int copy_users(user *oldUsers, user *newUsers, int newSize){
+    if ((oldUsers == NULL) || (newUsers == NULL) || (newSize <= 0 )){
+        return 0;
+    }
+    size_t sizeName = 0;
+    size_t sizeServerName = 0;
+    for(int i = 0; i < newSize; i++){
+        sizeName = strlen(oldUsers[i].name);
+        newUsers[i].name = oldUsers[i].name;
+        newUsers[i].conectionNbr = oldUsers[i].conectionNbr;
+        newUsers[i].serverName = oldUsers[i].serverName;
+        newUsers[i].timespend = oldUsers[i].timespend;
+    }
+    return 1;
 }
 
 void delete_user_bank(user *users, int usersSize){
@@ -88,7 +114,7 @@ void delete_user_bank(user *users, int usersSize){
 
 int check_line(char *line){
   regex_t regex;
-  int reti;
+  int reti = 0;
 
   reti = regcomp(&regex, LINE_REGEX, 0);
 
@@ -103,27 +129,53 @@ int check_line(char *line){
      return 1;
    }
    regfree(&regex);
-   printf("test\n");
    return 0;
 }
 
 int parse_line(char *line, user *newUser) {
-  int i = 0;
-  char *tempLine = calloc(strlen(line), sizeof(char));
-  strncpy(tempLine, line, strlen(line));
+  int i = 0; 
+  int size = 0;
+  size = strlen(line);
+  if(size <= 0){
+      return 0;
+  }
+  char *tempLine = calloc(size + 1, sizeof(char));
+  strncpy(tempLine, line, size);
+  tempLine[size] = '\0';
   char *token = strtok(tempLine, ";");
+  if(token == NULL){
+      return 0;
+  }
   newUser->conectionNbr = 1;
   while (token) {
     switch (i) {
       case 1:
-    	newUser->name = calloc(strlen(token) + 1, sizeof(char));
-    	strncpy(newUser->name, token, strlen(token));
-        newUser->name[strlen(token)] = '\0';
+          size = strlen(token);
+          if(size <= 0){
+              return 0;
+          }
+    	newUser->name = malloc(size + 1* sizeof(char));
+        if(newUser->name == NULL){
+            return 0;
+        }
+    	if(strncpy(newUser->name, token, size) == NULL){
+            return 0;
+        }
+        newUser->name[size] = '\0';
         break;
       case 2:
-    	newUser->serverName = calloc(strlen(token) + 1, sizeof(char));
-    	strncpy(newUser->serverName, token, strlen(token));
-        newUser->serverName[strlen(token)] = '\0';
+          size = strlen(token);
+          if(size <= 0){
+              return 0;
+          }
+    	newUser->serverName = malloc(size + 1* sizeof(char));
+        if(newUser->serverName == NULL){
+            return 0;
+        }
+    	if(strncpy(newUser->serverName, token, size) == NULL){
+            return 0;
+        }
+        newUser->serverName[size] = '\0';
     	break;
       case 3:
     	newUser->timespend = strtol(token,NULL,10);
@@ -132,6 +184,9 @@ int parse_line(char *line, user *newUser) {
         break;
     }
     token = strtok(NULL, ";");
+    if(token == NULL){
+        return 0;
+    }
     if(token) {
       i++;
     }
@@ -140,7 +195,7 @@ int parse_line(char *line, user *newUser) {
   tempLine = NULL;
   free(token);
   token =  NULL;
-  return 0;
+  return 1;
 }
 
 
@@ -159,7 +214,7 @@ int readFiles(int fd) {
 			buf[i] = '\0';
 			if(check_line(buf)) {
 				parse_line(buf,&us);
-				userBank = add_to_LOG(us, userBank, &nbUser);
+                                userBank = add_to_LOG(us, userBank, &nbUser);
 			}
 			i = 0;
 		}
@@ -172,7 +227,7 @@ int readFiles(int fd) {
     delete_user_bank(userBank, nbUser);
     free(userBank);
     userBank = NULL;
-	return 1;
+	return -1;
 }
 
 int check_file() {
