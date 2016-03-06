@@ -126,6 +126,7 @@ int check_line(char *line){
 
   reti = regexec(&regex, line, 0, NULL, 0);
    if (reti == 0){
+   	 regfree(&regex);
      return 1;
    }
    regfree(&regex);
